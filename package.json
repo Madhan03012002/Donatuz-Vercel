@@ -1,18 +1,26 @@
 {
   "name": "donatuz-vercel",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "index.ts",
   "engines": {
     "node": "22.x"
   },
   "scripts": {
-    "start": "node index.js",
+    "start": "ts-node index.ts",
+    "dev": "nodemon index.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@types/express": "^5.0.0",
     "express": "^4.21.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.1",
+    "nodemon": "^3.1.9",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.3"
   }
 }
