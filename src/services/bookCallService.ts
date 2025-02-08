@@ -6,6 +6,13 @@ import { formatTimeWithPeriod } from "../utils/timeFormat";
 import { CallBookingOrders } from "../models/myOrders";
 // import { create } from "domain";
 
+export const testing = async (req:Request,res:Response)=>{
+    try{
+        res.status(200).send("Hello , Your Api call is Success")
+    } catch (error:any){
+        res.status(500).send({ StatusCode: 500, Message: `INTERNAL ERROR : ${error.message}` });
+    }
+}
 export const create_user = async (req: Request, res: Response) => {
   try {
     const { username, password } = req.body;
