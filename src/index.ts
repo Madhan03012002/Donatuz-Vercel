@@ -49,7 +49,7 @@ const init = () => {
       app.get("/",(req,res)=>{
         res.status(200).send("Hello from the server")
     })
-      // app.use("/bookcalls/api", cors(), router);
+      app.use("/bookcalls/api", cors(), router);
       app.get("/bookcalls", (req, res) => {
         res.send(
           `<h1 style='text-align:center;'>🤞➖Welcome to Booking Calls ➖🤞</h1><br><h2 style='text-align:center;'>${new Date().toLocaleString()}</h2>`
