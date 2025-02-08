@@ -13,11 +13,14 @@
 // })
 import express from 'express';
 import BodyParser from 'body-parser';
+import { initmongo } from './database/mongodb';
+
 const app = express();
 
 const init = () => {
     try {
-  
+        initmongo();
+
       const PORT = process.env.PORT || 3000;
       app.use(BodyParser.json());
     //   app.use(BodyParser.json({ limit: '50mb' }))
