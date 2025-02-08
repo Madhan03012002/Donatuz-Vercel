@@ -1,14 +1,16 @@
 {
   "name": "donatuz-vercel",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "server.ts",
+  "engines": {
+    "node": "22.x"
+  },
   "scripts": {
     "dev": "cross-env NODE_ENV=dev nodemon ./src/server.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
   "license": "ISC",
-  "description": "",
   "devDependencies": {
     "@types/express": "^5.0.0",
     "@types/node": "^22.13.1",
@@ -24,5 +26,6 @@
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "mongoose": "^8.10.0"
-  }
+  },
+  "description": ""
 }
