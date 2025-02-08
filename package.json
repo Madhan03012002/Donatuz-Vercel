@@ -15,7 +15,6 @@
   "description": "",
   "dependencies": {
     "@types/express": "^5.0.0",
-    "@types/mongoose": "^5.11.96",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "mongoose": "^8.10.0"
