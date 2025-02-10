@@ -4,6 +4,7 @@ import { BookingCallModel } from '../models/bookCalls'
 import { UserModel } from "../models/userModels";
 import { formatTimeWithPeriod } from "../utils/timeFormat";
 import { CallBookingOrders } from "../models/myOrders";
+import { error } from "console";
 // import { create } from "domain";
 
 export const testing = async (req:Request,res:Response)=>{
@@ -314,11 +315,14 @@ export const myOrders = async (req: Request, res: Response) => {
 export const view_bookings = async (req: Request, res: Response) => {
   try {
     const { username } = req.query;
-    const data = await CallBookingOrders.findOne({ username });
-    const bookedDetails: any = await BookingCallModel.find({ username });
+    console.log(username)
+    if (!username) {
+        console.error("❌ Error: Username is undefined or empty.");
+    } else {
+    const data = await CallBookingOrders.findOne({ username:username });
+    const bookedDetails: any = await BookingCallModel.find({ username:username });
     const bookedData: any = [];
     for (let i in bookedDetails) {
-
       let a = bookedDetails[i].timeslots.morning;
       let b = bookedDetails[i].timeslots.afternoon;
       let c = bookedDetails[i].timeslots.evening;
@@ -358,7 +362,9 @@ export const view_bookings = async (req: Request, res: Response) => {
         }
       });
     }
+    console.log(bookedData)
     res.status(200).send({ StatusCode: 200, Message: "Booked Details Fetched", bookedData })
+}
   } catch (error: any) {
     res.status(500).send({ StatusCode: 500, Message: `INTERNAL ERROR: ${error.message}`, });
   }
