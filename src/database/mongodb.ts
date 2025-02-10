@@ -27,8 +27,14 @@ export const initmongo = async () => {
         }
         mongoose.set("strictQuery", true);
         await mongoose.connect(DB_CONNECTION_STRING, {
-            serverSelectionTimeoutMS: 5000, // Timeout if no response in 5 sec
+            tls: true,  // Ensure TLS is enabled
+            tlsInsecure: false,  // Prevent insecure SSL
+            connectTimeoutMS: 10000,  // Timeout to prevent hanging
         });
+
+        // await mongoose.connect(DB_CONNECTION_STRING, {
+        //     serverSelectionTimeoutMS: 5000, // Timeout if no response in 5 sec
+        // });
         let db = mongoose.connection;
 
         db.on("error", (err) => console.log("❌ MongoDB Error:", err));
