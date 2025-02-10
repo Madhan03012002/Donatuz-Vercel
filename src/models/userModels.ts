@@ -4,7 +4,7 @@ const UserSchema = new Schema({
   username: { type: String, required: true, unique: true },
   password: { type: String, required: true }, 
   createdAt: { type: Date, default: Date.now },
-  UID: { type: String , required: true}
+  UID: { type: String }
 });
 
 export const UserModel = model("User", UserSchema);
