@@ -2,17 +2,43 @@ import mongoose from "mongoose";
 import * as dotenv from 'dotenv'
 
 dotenv.config()
-const DB_CONNTION_STRING = process.env.DB_CONNTION_STRING ? process.env.DB_CONNTION_STRING : "DB_CONNTION_STRING"
+const DB_CONNECTION_STRING = process.env.DB_CONNECTION_STRING ? process.env.DB_CONNECTION_STRING : "DB_CONNTION_STRING"
 
-export const initmongo = () => {
+// // export const initmongo = async () => {
+// //     try {
+// //         mongoose.set('strictQuery', true);
+// //         await mongoose.connect(DB_CONNTION_STRING);
+// //         let db = mongoose.connection;
+// //         db.on('error', err => console.log(err));
+// //         db.once('open', () => console.log('\n📝 Connected'));
+
+// //     } catch (err) {
+// //         console.log(err);
+// //     }
+// // }
+
+console.log("🔍 Loaded DB_CONNECTION_STRING:", process.env.DB_CONNECTION_STRING); // Debugging
+
+ 
+export const initmongo = async () => {
     try {
-        mongoose.set('strictQuery', true);
-        mongoose.connect(DB_CONNTION_STRING);
+        if (!DB_CONNECTION_STRING) {
+            throw new Error("❌ Missing DB_CONNECTION_STRING in .env file");
+        }
+        mongoose.set("strictQuery", true);
+        await mongoose.connect(DB_CONNECTION_STRING, {
+            serverSelectionTimeoutMS: 5000, // Timeout if no response in 5 sec
+        });
         let db = mongoose.connection;
-        db.on('error', err => console.log(err));
-        db.once('open', () => console.log('\n📝 Connected'));
+
+        db.on("error", (err) => console.log("❌ MongoDB Error:", err));
+        db.on("disconnected", () => console.log("⚠️ MongoDB Disconnected"));
+        db.once("open", () => console.log("\n✅ Fully Connected to MongoDB"));
 
     } catch (err) {
-        console.log(err);
+        console.error("❌ MongoDB Connection Failed:", err);
     }
-}
+};
+
+initmongo();
+
