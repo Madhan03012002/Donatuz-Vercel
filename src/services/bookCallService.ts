@@ -313,7 +313,7 @@ export const myOrders = async (req: Request, res: Response) => {
 
 export const view_bookings = async (req: Request, res: Response) => {
   try {
-    const { username } = req.body;
+    const { username } = req.query;
     const data = await CallBookingOrders.findOne({ username });
     const bookedDetails: any = await BookingCallModel.find({ username });
     const bookedData: any = [];
