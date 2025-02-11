@@ -342,9 +342,9 @@ export const calculation_billing = async (req: any, res: Response) => {
 }
 
 export const showAndBook_call_bookings = async (req: Request, res: Response) => {
-    let { createrID, createrName } = req.body;
+    let { createrID} = req.body;
     try {
-        BookingCallModel.findOne({ createrID, createrName }).sort({ _id: -1 }).then(data => {
+        BookingCallModel.findOne({ createrID }).sort({ _id: -1 }).then(data => {
             console.log(data)
             if (data) {
 
