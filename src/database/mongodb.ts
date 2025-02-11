@@ -17,8 +17,7 @@ const DB_CONNECTION_STRING = process.env.DB_CONNECTION_STRING ? process.env.DB_C
 // //     }
 // // }
 
-console.log("🔍 Loaded DB_CONNECTION_STRING:", process.env.DB_CONNECTION_STRING); // Debugging
-
+ 
  
 export const initmongo = async () => {
     try {

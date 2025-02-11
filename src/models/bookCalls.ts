@@ -1,68 +1,44 @@
 import { Schema, model } from "mongoose";
 
-const BookingCallSchema = new Schema({
-  username: {
-    type: String,
-    required: true
-   },
-  password: {
-    type: String,
-   },
-  createrName: {
-    type: String,
-    required: true
+const TimeSlotSchema = new Schema(
+  {
+    slot: { type: String, required: true },
+    isBooked: { type: Boolean, required: true, default: false },
   },
-  createrID: {
-    type: String,
-    required: true
-  },
-  rating: { 
-    type: Number, 
-    required: true 
-  },
-  profileImage: { 
-    type: String, 
-    required: true 
-  },
-  date: { 
-    type: String, 
-    required: true 
-  },
-  pricePerDuration: [
-    {
-      _id: false,
-      time: { type: String, required: true },
-      amount: { type: String, required: true },
-      isBooked: { type: Boolean, required: true,default:false }
+  { _id: false }
+);
+
+const BookingSchema = new Schema(
+  {
+    date: { type: String, required: true },
+    pricePerDuration: [{ type: String, required: true }],
+    timeslots: {
+      morning: [TimeSlotSchema],
+      afternoon: [TimeSlotSchema],
+      evening: [TimeSlotSchema],
     },
-  ],
-  timeslots: {
-    morning: [
-      { _id: false, slot: { type: String, required: true }, isBooked: { type: Boolean, required: true } },
-    ],
-    afternoon: [
-      {_id: false, slot: { type: String, required: true }, isBooked: { type: Boolean, required: true } },
-    ],
-    evening: [
-      { _id: false, slot: { type: String, required: true }, isBooked: { type: Boolean, required: true } },
-    ],
   },
-  createdAt: {
-    type: Date,
-    default: Date.now,
+  { _id: false }
+);
+
+// Updated user schema as a nested object
+const UserSchema = new Schema(
+  {
+    username: { type: String, required: true },
+    userID: { type: String, required: true },
+    createrName: { type: String, required: true },
+    createrID: { type: String, required: true },
+    rating: { type: Number, required: true, default: 0 },
+    profileImage: { type: String, required: true },
   },
-   dateTime: {
-    type: String,
-    required: true,
-  },
-  isUpdated: {
-    type: Number,
-    default:0
-  }
+  { _id: false }
+);
+
+const BookingCallSchema = new Schema({
+  user: { type: UserSchema, required: true }, // Nested user object
+  userslotsData: [BookingSchema],
+  createdAt: { type: Date, default: Date.now },
+  isUpdated: { type: Number, default: 0 },
 });
 
 export const BookingCallModel = model("Booking_Calls_Details", BookingCallSchema);
-
-
-
- 
