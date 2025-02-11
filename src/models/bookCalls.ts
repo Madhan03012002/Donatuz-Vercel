@@ -4,6 +4,7 @@ const TimeSlotSchema = new Schema(
   {
     slot: { type: String, required: true },
     isBooked: { type: Boolean, required: true, default: false },
+    isPaymentPaid: { type: Boolean, required: true, default: false }
   },
   { _id: false }
 );

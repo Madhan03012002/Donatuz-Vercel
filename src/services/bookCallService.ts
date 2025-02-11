@@ -359,17 +359,32 @@ export const showAndBook_call_bookings = async (req: Request, res: Response) => 
 
 }
 
+// {
+//     id: 1,
+//     name: "sudheer 7881",
+//     callType: "Current call",
+//     timeLeft: "09:20 Min",
+//     date: "2024-10-30",
+//     status: "Active",
+//     callJoined: true,
+//     categoryType: "Business",
+//     occasion: "Birthday",
+//     expectedDate: "24-12-2024",
+//     timeSlot: "3:00 PM - 4:30 PM",
+//     amountPaid: "25",
+//     paymentMethod: "Paypal",
+//   },
 
-
-export const myOrders = async (req: Request, res: Response) => {
+export const orderUpdate = async (req: Request, res: Response) => {
     try {
-        const { username, createrID, date, duration, timeslot, basePrice, platformCharges, salesTax, total } = req.body;
+        const { username,userID, createrID, date, duration, timeslot, basePrice,callJoined, platformCharges, salesTax, total,occasion, amountPaid,categoryType,paymentMethod} = req.body;
 
         if (!username || !createrID || !date || !timeslot) {
             res.status(400).json({ StatusCode: 400, Message: "Missing required fields: username, creatorID, Date, or Timeslot.", });
         }
         const data = {
             username: username,
+            userID:userID,
             createrID: createrID,
             date: date,
             duration: duration,
@@ -377,10 +392,15 @@ export const myOrders = async (req: Request, res: Response) => {
             basePrice: basePrice,
             platformCharges: platformCharges,
             salesTax: salesTax,
-            total: total,
-            status: true,
+            status: 1,
+            occasion:occasion,
+            amountPaid:amountPaid,
+            categoryType:categoryType,
+            paymentMethod:paymentMethod,
+            // callJoined:callJoined,
             createdAt: new Date(),
         }
+        console.log(data)
         await CallBookingOrders.create(data)
         res.status(200).send({ StatusCode: 200, Message: "Order Successfully Booked" })
     } catch (error: any) {
