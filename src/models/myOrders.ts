@@ -13,7 +13,7 @@ const CallBookOrderSchema = new Schema({
     total: { type: String },
     status: { type: Number, default: 0 }, 
     timeLeft: { type: String, default: "" },
-    createdAt: { type: Date },
+    createdAt: { type: Date, default: Date.now },
     occasion: {type: String},
     amountPaid: { type: String, required: true },
     paymentMethod: { type: String ,required: true},

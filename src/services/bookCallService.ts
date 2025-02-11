@@ -204,7 +204,7 @@ export const user_call_bookings = async (req: any, res: Response, next: any) => 
 
 
                 if (!booking) {
-                     res.status(404).send({ StatusCode: 404, Message: "Booking not found!" });
+                    res.status(404).send({ StatusCode: 404, Message: "Booking not found!" });
                 }
                 const requestDates = userslotsData.map((slot: any) => slot.date);
 
@@ -215,19 +215,19 @@ export const user_call_bookings = async (req: any, res: Response, next: any) => 
 
                 // console.log("Updated Slot Data:", updatedSlotData);
                 if (!updatedSlotData || !updatedSlotData?.timeslots) {
-                     res.status(404).send({ StatusCode: 404, Message: "Booking slot not found for this date!" });
+                    res.status(404).send({ StatusCode: 404, Message: "Booking slot not found for this date!" });
                 }
 
                 let updatedTimeslots = false;
                 for (let slotData of userslotsData) {  // Loop through each date's slots
                     console.log(`Date: ${slotData.date}`);
-                    
-                    for (let partOfDay of ["morning", "afternoon", "evening"]) { 
-                        const newTimeslot = slotData.timeslots?.[partOfDay] || []; 
+
+                    for (let partOfDay of ["morning", "afternoon", "evening"]) {
+                        const newTimeslot = slotData.timeslots?.[partOfDay] || [];
                         const oldTimeslot = updatedSlotData?.timeslots?.[partOfDay] || [];
-                
+
                         console.log(`Checking ${partOfDay} timeslots: `, { newTimeslot, oldTimeslot });
-                
+
                         for (let i = 0; i < Math.min(newTimeslot.length, oldTimeslot.length); i++) {
                             if (newTimeslot[i].isBooked !== oldTimeslot[i].isBooked) {
                                 updatedTimeslots = true;
@@ -236,9 +236,9 @@ export const user_call_bookings = async (req: any, res: Response, next: any) => 
                         }
                     }
                 }
-console.log(updatedTimeslots)
+                console.log(updatedTimeslots)
                 if (updatedTimeslots) {
-                    
+
                     const updatedResult = await BookingCallModel.updateOne(
                         {
                             "user.username": username,
@@ -255,9 +255,9 @@ console.log(updatedTimeslots)
                         }
                     );
 
-                        req.booking = await BookingCallModel.findOne({ "user.username": username, "user.createrID": createrID }).sort({ createdAt: -1 });
-                       next();
-                  
+                    req.booking = await BookingCallModel.findOne({ "user.username": username, "user.createrID": createrID }).sort({ createdAt: -1 });
+                    next();
+
                 }
 
             }
@@ -342,7 +342,7 @@ export const calculation_billing = async (req: any, res: Response) => {
 }
 
 export const showAndBook_call_bookings = async (req: Request, res: Response) => {
-    let { createrID} = req.body;
+    let { createrID } = req.body;
     try {
         BookingCallModel.findOne({ createrID }).sort({ _id: -1 }).then(data => {
             console.log(data)
@@ -377,14 +377,14 @@ export const showAndBook_call_bookings = async (req: Request, res: Response) => 
 
 export const orderUpdate = async (req: Request, res: Response) => {
     try {
-        const { username,userID, createrID, date, duration, timeslot, basePrice,callJoined, platformCharges, salesTax, total,occasion, amountPaid,categoryType,paymentMethod} = req.body;
+        const { username, userID, createrID, date, duration, timeslot, basePrice, callJoined, platformCharges, salesTax, total, occasion, amountPaid, categoryType, paymentMethod } = req.body;
 
         if (!username || !createrID || !date || !timeslot) {
             res.status(400).json({ StatusCode: 400, Message: "Missing required fields: username, creatorID, Date, or Timeslot.", });
         }
         const data = {
             username: username,
-            userID:userID,
+            userID: userID,
             createrID: createrID,
             date: date,
             duration: duration,
@@ -393,10 +393,10 @@ export const orderUpdate = async (req: Request, res: Response) => {
             platformCharges: platformCharges,
             salesTax: salesTax,
             status: 1,
-            occasion:occasion,
-            amountPaid:amountPaid,
-            categoryType:categoryType,
-            paymentMethod:paymentMethod,
+            occasion: occasion,
+            amountPaid: amountPaid,
+            categoryType: categoryType,
+            paymentMethod: paymentMethod,
             // callJoined:callJoined,
             createdAt: new Date(),
         }
@@ -407,6 +407,23 @@ export const orderUpdate = async (req: Request, res: Response) => {
         res.status(500).send({ StatusCode: 500, Message: `INTERNAL ERROR: ${error.message}`, });
     }
 }
+
+
+export const myOrders = async (req: Request, res: Response) => {
+    try {
+        const {userID} = req.body;
+        if(!userID){
+            res.status(400).send({StatusCode:400,Message:"UserID Invalid"});
+        }
+        const orderdetails = await CallBookingOrders.find({userID}).sort({createdAt:-1})
+        console.log(orderdetails)
+        res.status(200).send({StatusCode:200,Message:"MyOrder Fetched Successfully",orderdetails})
+    } catch (error: any) {
+        res.status(500).send({ StatusCode: 500, Message: `INTERNAL ERROR: ${error.message}`, });
+    }
+}
+
+
 
 export const view_bookings = async (req: Request, res: Response) => {
     try {
