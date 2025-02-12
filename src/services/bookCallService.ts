@@ -5,6 +5,8 @@ import { UserModel } from "../models/userModels";
 import { formatTimeWithPeriod } from "../utils/timeFormat";
 import { CallBookingOrders } from "../models/myOrders";
 import { error } from "console";
+import { AccessToken, Role } from "@huddle01/server-sdk/auth";
+
 // import { create } from "domain";
 
 export const testing = async (req: Request, res: Response) => {
@@ -344,7 +346,11 @@ export const calculation_billing = async (req: any, res: Response) => {
 export const showAndBook_call_bookings = async (req: Request, res: Response) => {
     let { createrID } = req.body;
     try {
-        BookingCallModel.findOne({ createrID }).sort({ _id: -1 }).then(data => {
+        if(!createrID){
+            res.status(400).send({StatusCode:400,Message:"CreaterID Not Found"})
+        }else{
+        
+        BookingCallModel.findOne({ createrID:createrID }).sort({ _id: -1 }).then(data => {
             console.log(data)
             if (data) {
 
@@ -353,6 +359,7 @@ export const showAndBook_call_bookings = async (req: Request, res: Response) => 
                 res.status(400).send({ StatusCode: 400, Message: "user not found" })
             }
         })
+    }
     } catch (error: any) {
         res.status(500).send(`INTERNAL ERROR : ${error}`)
     }
@@ -482,6 +489,43 @@ export const view_bookings = async (req: Request, res: Response) => {
         res.status(500).send({ StatusCode: 500, Message: `INTERNAL ERROR: ${error.message}`, });
     }
 }
+
+
+
+export const dynamic = "force-dynamic";
+export const huddle = async (req: Request, res: Response) => {
+  const  searchParams:any = new URL(req.url);
+console.log(searchParams)
+  const roomId = searchParams.get("roomId");
+
+  if (!roomId) {
+     new Response("Missing roomId", { status: 400 });
+  }
+
+  const accessToken = new AccessToken({
+    apiKey: "ak_iNM53RyFmEbyUcg9",
+    roomId: roomId as string,
+    role: Role.HOST,
+    permissions: {
+      admin: true,
+      canConsume: true,
+      canProduce: true,
+      canProduceSources: {
+        cam: true,
+        mic: true,
+        screen: true,
+      },
+      canRecvData: true,
+      canSendData: true,
+      canUpdateMetadata: true,
+    },
+  });
+
+  const token = await accessToken.toJwt();
+console.log("------------",token)
+   new Response(token, { status: 200 });
+}
+
 
 // router.post("/register", async (req, res) => {
 
