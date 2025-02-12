@@ -168,8 +168,8 @@ export const user_call_bookings = async (req: any, res: Response, next: any) => 
                         userID: user1?.userID || "",
                         createrName: user1?.createrName || "",
                         createrID: user1?.createrID || "",
-                        rating: user1?.rating || 0,
-                        profileImage: user1?.profileImage || "",
+                        // rating: user1?.rating || 0,
+                        // profileImage: user1?.profileImage || "",
                     },
                     userslotsData: userslotsData,
                     isUpdated: 1, // Indicates user has created a booking
@@ -207,7 +207,7 @@ export const user_call_bookings = async (req: any, res: Response, next: any) => 
 
                 if (!booking) {
                     res.status(404).send({ StatusCode: 404, Message: "Booking not found!" });
-                }
+                }else{
                 const requestDates = userslotsData.map((slot: any) => slot.date);
 
                 let updatedSlotData = booking?.userslotsData?.find((slot: any) => {
@@ -261,7 +261,7 @@ export const user_call_bookings = async (req: any, res: Response, next: any) => 
                     next();
 
                 }
-
+            }
             }
         } else {
             res.status(404).send({ StatusCode: 404, Message: "User not found!" });
