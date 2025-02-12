@@ -155,11 +155,9 @@ export const user_call_bookings = async (req: any, res: Response, next: any) => 
             res.status(400).send({ StatusCode: 400, Message: "User Not Found" })
         }
         const user = await UserModel.findOne({ username: user1?.username });
-        // console.log("------------",user)
         if (user) {
 
             let userdata = await BookingCallModel.findOne({ username: user1?.username, createrID: user1?.createrID })
-            // console.log(userdata)
             if (!userdata) {
 
 
@@ -169,29 +167,16 @@ export const user_call_bookings = async (req: any, res: Response, next: any) => 
                         userID: user1?.userID || "",
                         createrName: user1?.createrName || "",
                         createrID: user1?.createrID || "",
-                        // rating: user1?.rating || 0,
-                        // profileImage: user1?.profileImage || "",
+                        
                     },
                     userslotsData: userslotsData,
-                    isUpdated: 1, // Indicates user has created a booking
+                    isUpdated: 1,
                 };
-                // let userData = {
-                //   username,
-                //   createrName,
-                //   createrID,
-                //   rating,
-                //   profileImage,
-                //   pricePerDuration,
-                //   timeslots,
-                //   callAbout: req.body.callAbout || "",
-                //   date: date,
-                //   isUpdated: 1,            //user creates a booking call is 1
-                //   dateTime: moment().format("DD/MM/YYYY HH:mm"),
-                // };
+               
                 console.log("Created Details")
                 let result: any = await BookingCallModel.create(bookingData);
                 if (result) {
-                    req.booking = result; // Pass booking data to next middleware
+                    req.booking = result; 
                     next();
                 } else {
                     res.status(500).send({ StatusCode: 500, Message: "Failed to create booking call!" });
@@ -413,32 +398,27 @@ export const showAndBook_call_bookings = async (req: Request, res: Response) => 
 
 export const orderUpdate = async (req: Request, res: Response) => {
     try {
-        const { username, userID, createrID, date, duration, timeslot, basePrice, callJoined, platformCharges, salesTax, total, occasion, amountPaid, categoryType, paymentMethod } = req.body;
+        const { username,isBooked ,userID, createrID,status, date, duration, timeslot, basePrice, BID,callJoined, platformCharges, salesTax, total, occasion, amountPaid, categoryType, paymentMethod } = req.body;
 
-        if (!username || !createrID || !date || !timeslot) {
-            res.status(400).json({ StatusCode: 400, Message: "Missing required fields: username, creatorID, Date, or Timeslot.", });
+        if (!userID && !createrID && !BID) {
+            res.status(400).json({ StatusCode: 400, Message: "Missing required fields:userID createrID BID", });
+        } else {
+            let OID= `O${generateCustomUuid("0123456789DONATUZ", 10)}`
+            await CallBookingOrders.updateOne(
+                {
+                    BID:BID,
+                    userID:userID
+                }, 
+                 { 
+                    $set: {
+                        OID:OID,
+                    isBooked: true 
+                }
+            }
+            )
+            res.status(200).send({ StatusCode: 200, Message: "Order Successfully Booked",OID })
         }
-        const data = {
-            username: username,
-            userID: userID,
-            createrID: createrID,
-            date: date,
-            duration: duration,
-            timeslot: timeslot,
-            basePrice: basePrice,
-            platformCharges: platformCharges,
-            salesTax: salesTax,
-            status: 1,
-            occasion: occasion,
-            amountPaid: amountPaid,
-            categoryType: categoryType,
-            paymentMethod: paymentMethod,
-            // callJoined:callJoined,
-            createdAt: new Date(),
-        }
-        console.log(data)
-        await CallBookingOrders.create(data)
-        res.status(200).send({ StatusCode: 200, Message: "Order Successfully Booked" })
+
     } catch (error: any) {
         res.status(500).send({ StatusCode: 500, Message: `INTERNAL ERROR: ${error.message}`, });
     }
@@ -447,11 +427,11 @@ export const orderUpdate = async (req: Request, res: Response) => {
 
 export const myOrders = async (req: Request, res: Response) => {
     try {
-        const { userID } = req.body;
-        if (!userID) {
+        const { userID ,OID} = req.body;
+        if (!userID && OID ) {
             res.status(400).send({ StatusCode: 400, Message: "UserID Invalid" });
         }
-        const orderdetails = await CallBookingOrders.find({ userID }).sort({ createdAt: -1 })
+        const orderdetails = await CallBookingOrders.find({ userID:userID,OID:OID,isBooked:true }).sort({ createdAt: -1 })
         console.log(orderdetails)
         res.status(200).send({ StatusCode: 200, Message: "MyOrder Fetched Successfully", orderdetails })
     } catch (error: any) {

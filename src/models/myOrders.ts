@@ -3,6 +3,7 @@ import { Schema, model } from "mongoose";
 const CallBookOrderSchema = new Schema({
     username: { type: String },
     BID: {type: String, required:true},
+    OID: {type: String},
     userID: { type: String, required: true },
     createrID: { type: String },
     date: { type: String },
@@ -19,6 +20,7 @@ const CallBookOrderSchema = new Schema({
     amountPaid: { type: String},
     paymentMethod: { type: String },
     expectedDate: {type: String },
+    isBooked: { type: Boolean , default: false},
     callJoined: { type: Boolean, default: false }
 });
 
