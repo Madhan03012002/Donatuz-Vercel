@@ -6,6 +6,7 @@ import { formatTimeWithPeriod } from "../utils/timeFormat";
 import { CallBookingOrders } from "../models/myOrders";
 import { error } from "console";
 import { AccessToken, Role } from "@huddle01/server-sdk/auth";
+import { generateCustomUuid } from "custom-uuid";
 
 // import { create } from "domain";
 
@@ -207,61 +208,61 @@ export const user_call_bookings = async (req: any, res: Response, next: any) => 
 
                 if (!booking) {
                     res.status(404).send({ StatusCode: 404, Message: "Booking not found!" });
-                }else{
-                const requestDates = userslotsData.map((slot: any) => slot.date);
+                } else {
+                    const requestDates = userslotsData.map((slot: any) => slot.date);
 
-                let updatedSlotData = booking?.userslotsData?.find((slot: any) => {
-                    // console.log("Checking slot date:", slot.date, "vs", requestDates);
-                    return requestDates.includes(slot.date);
-                });
+                    let updatedSlotData = booking?.userslotsData?.find((slot: any) => {
+                        // console.log("Checking slot date:", slot.date, "vs", requestDates);
+                        return requestDates.includes(slot.date);
+                    });
 
-                // console.log("Updated Slot Data:", updatedSlotData);
-                if (!updatedSlotData || !updatedSlotData?.timeslots) {
-                    res.status(404).send({ StatusCode: 404, Message: "Booking slot not found for this date!" });
-                }
+                    // console.log("Updated Slot Data:", updatedSlotData);
+                    if (!updatedSlotData || !updatedSlotData?.timeslots) {
+                        res.status(404).send({ StatusCode: 404, Message: "Booking slot not found for this date!" });
+                    }
 
-                let updatedTimeslots = false;
-                for (let slotData of userslotsData) {  // Loop through each date's slots
-                    console.log(`Date: ${slotData.date}`);
+                    let updatedTimeslots = false;
+                    for (let slotData of userslotsData) {  // Loop through each date's slots
+                        console.log(`Date: ${slotData.date}`);
 
-                    for (let partOfDay of ["morning", "afternoon", "evening"]) {
-                        const newTimeslot = slotData.timeslots?.[partOfDay] || [];
-                        const oldTimeslot = updatedSlotData?.timeslots?.[partOfDay] || [];
+                        for (let partOfDay of ["morning", "afternoon", "evening"]) {
+                            const newTimeslot = slotData.timeslots?.[partOfDay] || [];
+                            const oldTimeslot = updatedSlotData?.timeslots?.[partOfDay] || [];
 
-                        console.log(`Checking ${partOfDay} timeslots: `, { newTimeslot, oldTimeslot });
+                            console.log(`Checking ${partOfDay} timeslots: `, { newTimeslot, oldTimeslot });
 
-                        for (let i = 0; i < Math.min(newTimeslot.length, oldTimeslot.length); i++) {
-                            if (newTimeslot[i].isBooked !== oldTimeslot[i].isBooked) {
-                                updatedTimeslots = true;
-                                break;
+                            for (let i = 0; i < Math.min(newTimeslot.length, oldTimeslot.length); i++) {
+                                if (newTimeslot[i].isBooked !== oldTimeslot[i].isBooked) {
+                                    updatedTimeslots = true;
+                                    break;
+                                }
                             }
                         }
                     }
-                }
-                console.log(updatedTimeslots)
-                if (updatedTimeslots) {
+                    // console.log(updatedTimeslots)
+                    if (updatedTimeslots) {
 
-                    const updatedResult = await BookingCallModel.updateOne(
-                        {
-                            "user.username": username,
-                            "user.createrID": createrID,
-                            "userslotsData.date": date,
-                        },
-                        {
-                            $set: {
-                                "userslotsData.$.timeslots": timeslots,
-                                dateTime: moment().format("DD/MM/YYYY HH:mm"),
-                                rating,
-                                isUpdated: 2,
+                        const updatedResult = await BookingCallModel.updateOne(
+                            {
+                                "user.username": user1?.username,
+                                "user.createrName": user1?.createrName,
+                                "user.createrID": user1?.createrID,
+                                "userslotsData.date": { $in: userslotsData.map((slot: { date: any }) => slot.date) }
                             },
-                        }
-                    );
+                            {
+                                $set: {
+                                    "userslotsData.$.timeslots": timeslots,
+                                    dateTime: moment().format("DD/MM/YYYY HH:mm"),
+                                    isUpdated: 2,
+                                },
+                            }
+                        ).sort({ createdAt: -1 });
+                        console.log("00000000000000", updatedResult)
+                        req.booking = await BookingCallModel.findOne({ "user.username": user1?.username, "user.createrID": user1?.createrID }).sort({ createdAt: -1 });
+                        next();
 
-                    req.booking = await BookingCallModel.findOne({ "user.username": username, "user.createrID": createrID }).sort({ createdAt: -1 });
-                    next();
-
+                    }
                 }
-            }
             }
         } else {
             res.status(404).send({ StatusCode: 404, Message: "User not found!" });
@@ -282,7 +283,7 @@ export const calculation_billing = async (req: any, res: Response) => {
         let timeslotEnd = "";
         let timeslotStartPeriod = "";
         let timeslotEndPeriod = "";
-        console.log(booking)
+        console.log("----------", booking)
         const periods = ["morning", "afternoon", "evening"];
 
         booking?.userslotsData?.forEach((slotData: any) => {
@@ -323,20 +324,48 @@ export const calculation_billing = async (req: any, res: Response) => {
         console.log(total, totalDuration)
         // Format date
         const formattedDate = new Date(booking?.createdAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", });
-
+        let BID:any =  `B${generateCustomUuid("0123456789DONATUZ", 10)}`
         let result = {
-            Date: formattedDate,
-            Duration: Duration,
-            Timeslot: `${formattedStart} - ${formattedEnd}`,
-            BasePrice: `$${base.toFixed(2)}`,
-            PlatformCharges: `$${platformCharges.toFixed(2)}`,
-            SalesTax: `$${salesTax.toFixed(2)}`,
-            Total: `$${total.toFixed(2)}`,
+            username: booking?.user.username,
+            userID: booking?.user.userID,
+            createrID: booking?.user.createrID,
+            BID:BID,
+            date: formattedDate,
+            duration: Duration,
+            timeslot: `${formattedStart} - ${formattedEnd}`,
+            basePrice: `$${base.toFixed(2)}`,
+            platformCharges: `$${platformCharges.toFixed(2)}`,
+            salesTax: `$${salesTax.toFixed(2)}`,
+            total: `$${total.toFixed(2)}`,
+            amountPaid: `$${total.toFixed(2)}`,
+            status: 0
         }
 
         console.log("RESULT", result)
+        await CallBookingOrders.create(result);
+        res.status(200).send({ StatusCode: 200, Message: "updated Billing details fetched successfully!",BID:BID, result });
 
-        res.status(200).send({ StatusCode: 200, Message: "updated Billing details fetched successfully!", result });
+    } catch (error: any) {
+        res.status(500).send({ StatusCode: 500, Message: `INTERNAL ERROR : ${error}` })
+    }
+}
+
+export const billingDetails = async (req: Request, res: Response) => {
+    try {
+        const { BID, userID } = req.body;
+
+        if(!BID && !userID){
+            res.status(400).send({StatusCode:400,Message:"Invalid BID or userID"})
+        } else {
+
+           const billingData= await CallBookingOrders.findOne({BID:BID,userID:userID}).sort({createdAt:-1})
+           if(billingData){
+            res.status(200).send({StatusCode:200,Message:"Billing Data Fetched Successfully",billingData})
+           } else {
+            res.status(404).send({StatusCode:404,Message:"Billing Data Not Found"})
+           }
+        }
+
 
     } catch (error: any) {
         res.status(500).send({ StatusCode: 500, Message: `INTERNAL ERROR : ${error}` })
@@ -346,20 +375,20 @@ export const calculation_billing = async (req: any, res: Response) => {
 export const showAndBook_call_bookings = async (req: Request, res: Response) => {
     let { createrID } = req.body;
     try {
-        if(!createrID){
-            res.status(400).send({StatusCode:400,Message:"CreaterID Not Found"})
-        }else{
-        
-        BookingCallModel.findOne({ createrID:createrID }).sort({ _id: -1 }).then(data => {
-            console.log(data)
-            if (data) {
+        if (!createrID) {
+            res.status(400).send({ StatusCode: 400, Message: "CreaterID Not Found" })
+        } else {
 
-                res.status(200).send({ StatusCode: 200, Message: "Data Fetched Successfully", data })
-            } else {
-                res.status(400).send({ StatusCode: 400, Message: "user not found" })
-            }
-        })
-    }
+            BookingCallModel.findOne({ createrID: createrID }).sort({ _id: -1 }).then(data => {
+                console.log(data)
+                if (data) {
+
+                    res.status(200).send({ StatusCode: 200, Message: "Data Fetched Successfully", data })
+                } else {
+                    res.status(400).send({ StatusCode: 400, Message: "user not found" })
+                }
+            })
+        }
     } catch (error: any) {
         res.status(500).send(`INTERNAL ERROR : ${error}`)
     }
@@ -418,13 +447,13 @@ export const orderUpdate = async (req: Request, res: Response) => {
 
 export const myOrders = async (req: Request, res: Response) => {
     try {
-        const {userID} = req.body;
-        if(!userID){
-            res.status(400).send({StatusCode:400,Message:"UserID Invalid"});
+        const { userID } = req.body;
+        if (!userID) {
+            res.status(400).send({ StatusCode: 400, Message: "UserID Invalid" });
         }
-        const orderdetails = await CallBookingOrders.find({userID}).sort({createdAt:-1})
+        const orderdetails = await CallBookingOrders.find({ userID }).sort({ createdAt: -1 })
         console.log(orderdetails)
-        res.status(200).send({StatusCode:200,Message:"MyOrder Fetched Successfully",orderdetails})
+        res.status(200).send({ StatusCode: 200, Message: "MyOrder Fetched Successfully", orderdetails })
     } catch (error: any) {
         res.status(500).send({ StatusCode: 500, Message: `INTERNAL ERROR: ${error.message}`, });
     }
@@ -494,36 +523,36 @@ export const view_bookings = async (req: Request, res: Response) => {
 
 export const dynamic = "force-dynamic";
 export const huddle = async (req: Request, res: Response) => {
-  const  searchParams:any = new URL(req.url);
-console.log(searchParams)
-  const roomId = searchParams.get("roomId");
+    const searchParams: any = new URL(req.url);
+    console.log(searchParams)
+    const roomId = searchParams.get("roomId");
 
-  if (!roomId) {
-     new Response("Missing roomId", { status: 400 });
-  }
+    if (!roomId) {
+        new Response("Missing roomId", { status: 400 });
+    }
 
-  const accessToken = new AccessToken({
-    apiKey: "ak_iNM53RyFmEbyUcg9",
-    roomId: roomId as string,
-    role: Role.HOST,
-    permissions: {
-      admin: true,
-      canConsume: true,
-      canProduce: true,
-      canProduceSources: {
-        cam: true,
-        mic: true,
-        screen: true,
-      },
-      canRecvData: true,
-      canSendData: true,
-      canUpdateMetadata: true,
-    },
-  });
+    const accessToken = new AccessToken({
+        apiKey: "ak_iNM53RyFmEbyUcg9",
+        roomId: roomId as string,
+        role: Role.HOST,
+        permissions: {
+            admin: true,
+            canConsume: true,
+            canProduce: true,
+            canProduceSources: {
+                cam: true,
+                mic: true,
+                screen: true,
+            },
+            canRecvData: true,
+            canSendData: true,
+            canUpdateMetadata: true,
+        },
+    });
 
-  const token = await accessToken.toJwt();
-console.log("------------",token)
-   new Response(token, { status: 200 });
+    const token = await accessToken.toJwt();
+    console.log("------------", token)
+    new Response(token, { status: 200 });
 }
 
 

@@ -1,6 +1,6 @@
 import express from 'express'
 export const router = express.Router();
-import {creater_call_bookings,testing,huddle,user_call_bookings,calculation_billing,showAndBook_call_bookings,create_user,orderUpdate,myOrders,view_bookings} from '../services/bookCallService'
+import {creater_call_bookings,testing,billingDetails,huddle,user_call_bookings,calculation_billing,showAndBook_call_bookings,create_user,orderUpdate,myOrders,view_bookings} from '../services/bookCallService'
 
 // Routes
 router.post("/create_user",create_user)
@@ -11,5 +11,6 @@ router.post("/orderUpdate",orderUpdate)
 router.get("/view_bookings",view_bookings)
 router.get("/myOrders",myOrders)
 router.get("/huddle",huddle)
+router.get("/billingDetails",billingDetails)
 //testing
 router.get("/testing",testing)
