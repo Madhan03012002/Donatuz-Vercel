@@ -3,7 +3,7 @@ import { Schema, model } from "mongoose";
 const CallBookOrderSchema = new Schema({
     username: { type: String },
     BID: {type: String, required:true},
-    OID: {type: String},
+    OID: {type: String,required:true},
     userID: { type: String, required: true },
     createrID: { type: String },
     date: { type: String },

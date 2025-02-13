@@ -7,6 +7,7 @@ import { CallBookingOrders } from "../models/myOrders";
 import { error } from "console";
 import { AccessToken, Role } from "@huddle01/server-sdk/auth";
 import { generateCustomUuid } from "custom-uuid";
+import { BillingCalDetails } from "../models/billingDetails";
 
 // import { create } from "domain";
 
@@ -139,14 +140,71 @@ type UserDetails = {
     userSlotsData: UserSlotData[];
 };
 
-// user: {
-//     name: "Abraham",
-//     username: "@abraham6438",
-//     rating: 4,
-//     profileImage:
-//       "https://img.freepik.com/free-photo/young-beautiful-woman-pink-warm-sweater-natural-look-smiling-portrait-isolated-long-hair_285396-896.jpg?semt=ais_hybrid",
-//   },
+//Creater Details Insert to Show Creater Details for the initial time
+export const creater_details_update = async (req: Request, res: Response) => {
+    try {
+        const { user, userslotsData } = req.body;
+
+        if (!user || !userslotsData) {
+            res.status(400).send({ StatusCode: 400, Message: "Creater Details NOT FOUND" })
+        } else {
+            const createrDetails = await BookingCallModel.create({ user, userslotsData })
+            console.log(createrDetails)
+            res.status(200).send({ StatusCode: 200, Message: "Creater Details Created Successfully" })
+        }
+
+    } catch (error: any) {
+        res.status(500).send({ StatusCode: 500, Message: `INTERNAL ERROR : ${error}` })
+    }
+}
+
+
+
+export const view_creater_details = async (req: Request, res: Response) => {
+    let { createrID } = req.body;
+    try {
+        if (!createrID) {
+            res.status(400).send({ StatusCode: 400, Message: "CreaterID Not Found" })
+        } else {
+            const data = await BookingCallModel.findOne({ createrID }).sort({ _id: -1 });
+
+            if (data) {
+                res.status(200).json({ StatusCode: 200, Message: "Data Fetched Successfully", data });
+            } else {
+                res.status(404).json({ StatusCode: 404, Message: "User Not Found" });
+            }
+        }
+    } catch (error: any) {
+        res.status(500).send(`INTERNAL ERROR : ${error}`)
+    }
+}
+
 export const user_call_bookings = async (req: any, res: Response, next: any) => {
+    try {
+        const { username, userID, createrID, date, pricePerDuration, bookingSlot, day } = req.body;
+
+        if (!username || !userID || !createrID || !date || !pricePerDuration || !bookingSlot || !day) {
+            res.status(400).send({ StatusCode: 400, Message: "booking Details invalid" })
+        } else {
+            let data = {
+                username: username || "",
+                userID: userID || "",
+                createrID: createrID || "",
+                date: date || "",
+                pricePerDuration: pricePerDuration || "",
+                bookingSlot: bookingSlot || "",
+                day: day || ""
+            }
+            // await BillingCalDetails.create(data)
+            req.billingData = data
+            next();
+            // res.status(200).send({ StatusCode: 200, Message: "User Booking updated successfully" })
+        }
+    } catch (error: any) {
+        res.status(500).send(`INTERNAL ERROR : ${error}`)
+    }
+}
+export const user_call_bookings1 = async (req: any, res: Response, next: any) => {
     try {
         let { username, password, createrName, createrID, rating, profileImage, date, pricePerDuration, timeslots } = req.body;
         const { user1, userslotsData } = req.body;
@@ -167,16 +225,16 @@ export const user_call_bookings = async (req: any, res: Response, next: any) => 
                         userID: user1?.userID || "",
                         createrName: user1?.createrName || "",
                         createrID: user1?.createrID || "",
-                        
+
                     },
                     userslotsData: userslotsData,
                     isUpdated: 1,
                 };
-               
+
                 console.log("Created Details")
                 let result: any = await BookingCallModel.create(bookingData);
                 if (result) {
-                    req.booking = result; 
+                    req.booking = result;
                     next();
                 } else {
                     res.status(500).send({ StatusCode: 500, Message: "Failed to create booking call!" });
@@ -260,75 +318,46 @@ export const user_call_bookings = async (req: any, res: Response, next: any) => 
 
 export const calculation_billing = async (req: any, res: Response) => {
     try {
-        const booking: any = req.booking;
+        const billingData: any = req.billingData;
 
-        let basePrice = 17;
-        let totalDuration = 0;
-        let timeslotStart = "";
-        let timeslotEnd = "";
-        let timeslotStartPeriod = "";
-        let timeslotEndPeriod = "";
-        console.log("----------", booking)
-        const periods = ["morning", "afternoon", "evening"];
-
-        booking?.userslotsData?.forEach((slotData: any) => {
-            slotData.pricePerDuration.forEach((duration: any) => {
-                if (duration.isBooked) {
-                    basePrice += parseFloat(duration.amount.replace("$", ""));
-                }
-            });
-
-            for (const period of periods) {
-                const timeSlots: any = slotData.timeslots?.[period];
-                if (timeSlots) {
-                    timeSlots.forEach((slot: any) => {
-                        if (slot.isBooked) {
-                            totalDuration += 30; // Each slot is 30 minutes
-                            if (!timeslotStart) {
-                                timeslotStart = slot.slot.split("-")[0];
-                                timeslotStartPeriod = period;
-                            }
-                            timeslotEnd = slot.slot.split("-")[1];
-                            timeslotEndPeriod = period;
-                        }
-                    });
-                }
-            }
-        });
-
-
-        const hours = Math.floor(totalDuration / 60);
-        const minutes = totalDuration % 60;
-        const Duration = `${hours} hour${hours !== 1 ? "s" : ""}${minutes > 0 ? ` and ${minutes} minute${minutes !== 1 ? "s" : ""}` : ""}`;
-        const formattedStart = timeslotStart ? formatTimeWithPeriod(timeslotStart, timeslotStartPeriod) : "N/A";
-        const formattedEnd = timeslotEnd ? formatTimeWithPeriod(timeslotEnd, timeslotEndPeriod) : "N/A";
-        const platformCharges = 12;
-        const salesTax = 12;
-        const base = basePrice * totalDuration
-        const total = base + platformCharges + salesTax;
-        console.log(total, totalDuration)
-        // Format date
-        const formattedDate = new Date(booking?.createdAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", });
-        let BID:any =  `B${generateCustomUuid("0123456789DONATUZ", 10)}`
-        let result = {
-            username: booking?.user.username,
-            userID: booking?.user.userID,
-            createrID: booking?.user.createrID,
-            BID:BID,
-            date: formattedDate,
-            duration: Duration,
-            timeslot: `${formattedStart} - ${formattedEnd}`,
-            basePrice: `$${base.toFixed(2)}`,
-            platformCharges: `$${platformCharges.toFixed(2)}`,
-            salesTax: `$${salesTax.toFixed(2)}`,
-            total: `$${total.toFixed(2)}`,
-            amountPaid: `$${total.toFixed(2)}`,
-            status: 0
+        const priceMatch = billingData.pricePerDuration.match(/(\d+)\s*min\/\$(\d+)/);
+        if (!priceMatch) {
+            res.status(400).json({ StatusCode: 400, Message: "Invalid price format" });
         }
 
-        console.log("RESULT", result)
-        await CallBookingOrders.create(result);
-        res.status(200).send({ StatusCode: 200, Message: "updated Billing details fetched successfully!",BID:BID, result });
+        const ratePerMinute = parseFloat(priceMatch[2]); // Extract the dollar value
+
+        // Extract booking duration in minutes
+        const [start, end] = billingData.bookingSlot.split("-");
+        const startTime = new Date(`2025-01-01T${start}:00`);
+        const endTime = new Date(`2025-01-01T${end}:00`);
+        const durationInMinutes = (endTime.getTime() - startTime.getTime()) / (1000 * 60); // Convert milliseconds to minutes
+
+        // Calculate total cost
+        const totalCost = ratePerMinute * durationInMinutes;
+        let BID: any = `B${generateCustomUuid("0123456789DONATUZ", 10)}`
+
+        // Construct billing data
+        const billingData1 = {
+            username: billingData.username,
+            userID: billingData.userID,
+            createrID: billingData.createrID,
+            date: billingData.date,
+            BID: BID,
+            duration: `${durationInMinutes} minutes`,
+            timeslot: billingData.bookingSlot,
+            basePrice: `$${totalCost.toFixed(2)}`,
+            platformCharges: "$12.00",
+            salesTax: "$12.00",
+            total: `$${(totalCost + 24).toFixed(2)}`,
+            status: 0,
+            day: billingData.day,
+            callJoined: false,
+        };
+
+        await BillingCalDetails.create(billingData1);
+
+        res.status(201).json({ StatusCode: 201, Message: "Billing Details Created", BID });
 
     } catch (error: any) {
         res.status(500).send({ StatusCode: 500, Message: `INTERNAL ERROR : ${error}` })
@@ -339,16 +368,16 @@ export const billingDetails = async (req: Request, res: Response) => {
     try {
         const { BID, userID } = req.body;
 
-        if(!BID && !userID){
-            res.status(400).send({StatusCode:400,Message:"Invalid BID or userID"})
+        if (!BID && !userID) {
+            res.status(400).send({ StatusCode: 400, Message: "Invalid BID or userID" })
         } else {
 
-           const billingData= await CallBookingOrders.findOne({BID:BID,userID:userID}).sort({createdAt:-1})
-           if(billingData){
-            res.status(200).send({StatusCode:200,Message:"Billing Data Fetched Successfully",billingData})
-           } else {
-            res.status(404).send({StatusCode:404,Message:"Billing Data Not Found"})
-           }
+            const billingData = await BillingCalDetails.findOne({ BID: BID, userID: userID }).sort({ createdAt: -1 })
+            if (billingData) {
+                res.status(200).send({ StatusCode: 200, Message: "Billing Data Fetched Successfully", billingData })
+            } else {
+                res.status(404).send({ StatusCode: 404, Message: "Billing Data Not Found" })
+            }
         }
 
 
@@ -357,81 +386,72 @@ export const billingDetails = async (req: Request, res: Response) => {
     }
 }
 
-export const showAndBook_call_bookings = async (req: Request, res: Response) => {
-    let { createrID } = req.body;
-    try {
-        if (!createrID) {
-            res.status(400).send({ StatusCode: 400, Message: "CreaterID Not Found" })
-        } else {
 
-            BookingCallModel.findOne({ createrID: createrID }).sort({ _id: -1 }).then(data => {
-                console.log(data)
-                if (data) {
 
-                    res.status(200).send({ StatusCode: 200, Message: "Data Fetched Successfully", data })
-                } else {
-                    res.status(400).send({ StatusCode: 400, Message: "user not found" })
-                }
-            })
-        }
-    } catch (error: any) {
-        res.status(500).send(`INTERNAL ERROR : ${error}`)
-    }
-
-}
-
-// {
-//     id: 1,
-//     name: "sudheer 7881",
-//     callType: "Current call",
-//     timeLeft: "09:20 Min",
-//     date: "2024-10-30",
-//     status: "Active",
-//     callJoined: true,
-//     categoryType: "Business",
-//     occasion: "Birthday",
-//     expectedDate: "24-12-2024",
-//     timeSlot: "3:00 PM - 4:30 PM",
-//     amountPaid: "25",
-//     paymentMethod: "Paypal",
-//   },
 
 export const orderUpdate = async (req: Request, res: Response) => {
     try {
-        const { username,isBooked ,userID, createrID,status, date, duration, timeslot, basePrice, BID,callJoined, platformCharges, salesTax, total, occasion, amountPaid, categoryType, paymentMethod } = req.body;
+        const { isBookingConfirmed, BID, userID } = req.body;
 
-        if (!userID && !createrID && !BID) {
-            res.status(400).json({ StatusCode: 400, Message: "Missing required fields:userID createrID BID", });
+        if (!isBookingConfirmed) {
+            res.status(400).json({ StatusCode: 400, Message: "Missing required isBookingConfirmed" });
         } else {
-            let OID= `O${generateCustomUuid("0123456789DONATUZ", 10)}`
-            await CallBookingOrders.updateOne(
-                {
-                    BID:BID,
-                    userID:userID
-                }, 
-                 { 
-                    $set: {
-                        OID:OID,
-                    isBooked: true 
+            let OID = `O${generateCustomUuid("0123456789DONATUZ", 10)}`;
+
+            const billingData = await BillingCalDetails.findOne({ BID, userID }).sort({ createdAt: -1 }).lean();
+
+            if (!billingData) {
+                res.status(400).json({ StatusCode: 400, Message: "Invalid Billing Details" });
+            } else {
+
+                const { date, timeslot, day } = billingData;
+
+                if (!userID || !date || !timeslot || !day) {
+                    res.status(400).json({ StatusCode: 400, Message: "Missing required fields" });
+                } else {
+
+                    const bookingUpdate = await BookingCallModel.updateOne(
+                        {
+                            "user.userID": userID,
+                            "userslotsData.date": date,
+                            [`userslotsData.timeslots.${day}.slot`]: timeslot
+                        },
+                        {
+                            $set: {
+                                "userslotsData.$[].timeslots.$[].isBooked": true,
+                             }
+                        }
+                    );
+
+                    if (bookingUpdate.matchedCount === 0) {
+                        res.status(404).json({ StatusCode: 404, Message: "Time slot not found." });
+                    } else {
+
+                        await Promise.all([
+                            CallBookingOrders.updateOne({ BID, userID }, { $set: { OID, isBooked: true } }),
+                            BillingCalDetails.updateOne({ BID, userID }, { $set: { isBookingConfirmed: true } })
+                        ]);
+
+                        res.status(200).json({ StatusCode: 200, Message: "Slot successfully booked!", OID });
+                    }
                 }
             }
-            )
-            res.status(200).send({ StatusCode: 200, Message: "Order Successfully Booked",OID })
         }
-
-    } catch (error: any) {
-        res.status(500).send({ StatusCode: 500, Message: `INTERNAL ERROR: ${error.message}`, });
+    } catch (error) {
+        console.error("Booking Error:", error);
+        res.status(500).json({ StatusCode: 500, Message: "Internal Server Error" });
     }
+
 }
 
 
 export const myOrders = async (req: Request, res: Response) => {
     try {
-        const { userID ,OID} = req.body;
-        if (!userID && OID ) {
+        const { userID, OID } = req.body;
+        if (!userID && OID) {
             res.status(400).send({ StatusCode: 400, Message: "UserID Invalid" });
         }
-        const orderdetails = await CallBookingOrders.find({ userID:userID,OID:OID,isBooked:true }).sort({ createdAt: -1 })
+        const orderdetails = await CallBookingOrders.find({ userID: userID, OID: OID, isBooked: true }).sort({ createdAt: -1 })
         console.log(orderdetails)
         res.status(200).send({ StatusCode: 200, Message: "MyOrder Fetched Successfully", orderdetails })
     } catch (error: any) {
@@ -658,3 +678,6 @@ export const huddle = async (req: Request, res: Response) => {
 //       ]
 //     }
 //   }
+
+
+
