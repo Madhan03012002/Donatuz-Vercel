@@ -161,14 +161,14 @@ export const creater_details_update = async (req: Request, res: Response) => {
 
 
 export const view_creater_details = async (req: Request, res: Response) => {
-    let createrID = req.headers.createrid || req.headers.CreaterID; 
- 
+    let createrID = req.headers.createrid || req.headers.CreaterID;
+
     console.log(createrID)
     try {
         if (!createrID) {
             res.status(400).send({ StatusCode: 400, Message: "CreaterID Not Found" })
         } else {
-            const data = await BookingCallModel.findOne({ "user.createrID":createrID }).sort({ createdAt: -1 });
+            const data = await BookingCallModel.findOne({ "user.createrID": createrID }).sort({ createdAt: -1 });
 
             if (data) {
                 res.status(200).json({ StatusCode: 200, Message: "Data Fetched Successfully", data });
@@ -341,7 +341,7 @@ export const calculation_billing = async (req: any, res: Response) => {
 
         // Construct billing data
         const billingData1 = {
-            username: billingData.username,
+            // username: billingData.username,
             userID: billingData.userID,
             createrID: billingData.createrID,
             date: billingData.date,
@@ -359,7 +359,7 @@ export const calculation_billing = async (req: any, res: Response) => {
 
         await BillingCalDetails.create(billingData1);
 
-        res.status(201).json({ StatusCode: 201, Message: "Billing Details Created", BID });
+        res.status(201).json({ StatusCode: 201, Message: "Billing Details Created", BID, userID: billingData.userID });
 
     } catch (error: any) {
         res.status(500).send({ StatusCode: 500, Message: `INTERNAL ERROR : ${error}` })
@@ -395,15 +395,15 @@ export const billingDetails = async (req: Request, res: Response) => {
 
 export const orderUpdate = async (req: Request, res: Response) => {
     try {
-        const { isBookingConfirmed, BID, userID,createrID } = req.body;
-
+        const { isBookingConfirmed, BID, userID, createrID, occasion, paymentMethod } = req.body;
+        console.log(isBookingConfirmed, BID, userID, createrID)
         if (!isBookingConfirmed) {
             res.status(400).json({ StatusCode: 400, Message: "Missing required isBookingConfirmed" });
         } else {
             let OID = `O${generateCustomUuid("0123456789DONATUZ", 10)}`;
 
-             const billingData = await BillingCalDetails.findOne({ BID, userID,createrID }).sort({ createdAt: -1 }).lean();
-console.log(billingData)
+            const billingData = await BillingCalDetails.findOne({ BID, userID, createrID }).sort({ createdAt: -1 }).lean();
+            console.log(billingData)
             if (!billingData) {
                 res.status(400).json({ StatusCode: 400, Message: "Invalid Billing Details" });
             } else {
@@ -413,37 +413,63 @@ console.log(billingData)
                 if (!userID || !date || !timeslot || !day) {
                     res.status(400).json({ StatusCode: 400, Message: "Missing required fields" });
                 } else {
- 
-                    const bookingUpdate = await BookingCallModel.updateOne(
-                        {
-                            "user.userID": userID,
-                            "user.createrID": createrID,
-                            "userslotsData.date": date
-                        },
-                        {
-                            $set: {
-                                [`userslotsData.$[outer].timeslots.${day}.$[inner].isBooked`]: true,
-                                [`userslotsData.$[outer].timeslots.${day}.$[inner].isPaymentPaid`]: true
-                            }
-                        },
-                        {
-                            arrayFilters: [
-                                { "outer.date": date },  // Match correct date inside userslotsData
-                                { "inner.slot": timeslot }  // Match correct slot inside timeslots[day]
-                            ]
-                        }
-                    );                    
+                    const result = await BookingCallModel.findOne({
+                        "user.userID": userID,
+                        "user.createrID": createrID,
+                        "userslotsData.date": date,
+                        [`userslotsData.timeslots.${day}.slot`]: timeslot
+                    });
+                    console.log(result);
 
-                    if (bookingUpdate.matchedCount === 0) {
-                        res.status(404).json({ StatusCode: 404, Message: "Time slot not found." });
-                    } else {
-                         await Promise.all([
-                            CallBookingOrders.updateOne({ BID, userID }, { $set: { OID, isBooked: true } }),
-                            BillingCalDetails.updateOne({ BID, userID }, { $set: { isBookingConfirmed: true } })
-                        ]);
-
-                        res.status(200).json({ StatusCode: 200, Message: "Slot successfully booked!", OID });
+                    const ordersData = {
+                        OID: OID,
+                        username: billingData.username || "",
+                        userID: billingData.userID || "",
+                        createrID: billingData.createrID || "",
+                        date: billingData.date || "",
+                        BID: billingData.BID || "",
+                        duration: billingData.duration || "",
+                        timeslot: billingData.timeslot || "",
+                        total: billingData.total || "",
+                        day: billingData.day || "",
+                        occasion: occasion || "",
+                        paymentMethod: paymentMethod || "",
+                        isBooked:true
                     }
+                    console.log(ordersData)
+                    await CallBookingOrders.create(ordersData)
+
+                    // const bookingUpdate = await BookingCallModel.updateOne(
+                    //     {
+                    //         "user.userID": userID,
+                    //         "user.createrID": createrID,
+                    //         "userslotsData.date": date
+                    //     },
+                    //     {
+                    //         $set: {
+                    //             [`userslotsData.$[outer].timeslots.${day}.$[slotFilter].isBooked`]: true
+                    //         }
+                    //     },
+                    //     {
+                    //         arrayFilters: [
+                    //             { "outer.date": date },  // Match correct date inside userslotsData
+                    //             { "slotFilter.slot": timeslot }  // Match correct slot inside timeslots[day]
+                    //         ]
+                    //     }
+                    // );
+                    // console.log(bookingUpdate)
+
+
+                    // if (bookingUpdate.matchedCount === 0) {
+                    //     res.status(404).json({ StatusCode: 404, Message: "Time slot not found." });
+                    // } else {
+                    //      await Promise.all([
+                    //         CallBookingOrders.updateOne({ BID, userID }, { $set: { OID, isBooked: true } }),
+                    //         BillingCalDetails.updateOne({ BID, userID }, { $set: { isBookingConfirmed: true } })
+                    //     ]);
+
+                    res.status(200).json({ StatusCode: 200, Message: "Slot successfully booked!", OID });
+                    // }
                 }
             }
         }
@@ -458,10 +484,11 @@ console.log(billingData)
 export const myOrders = async (req: Request, res: Response) => {
     try {
         const { userID, OID } = req.body;
-        if (!userID && OID) {
+        console.log(userID, OID)
+        if (!userID) {
             res.status(400).send({ StatusCode: 400, Message: "UserID Invalid" });
         }
-        const orderdetails = await CallBookingOrders.find({ userID: userID, OID: OID, isBooked: true }).sort({ createdAt: -1 })
+        const orderdetails = await CallBookingOrders.find({ userID: userID, isBooked: true }).sort({ createdAt: -1 })
         console.log(orderdetails)
         res.status(200).send({ StatusCode: 200, Message: "MyOrder Fetched Successfully", orderdetails })
     } catch (error: any) {
