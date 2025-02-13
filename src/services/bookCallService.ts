@@ -368,7 +368,9 @@ export const calculation_billing = async (req: any, res: Response) => {
 
 export const billingDetails = async (req: Request, res: Response) => {
     try {
-        const { BID, userID } = req.body;
+        // const { BID, userID } = req.body;
+        const BID = req.headers.BID || req.headers.bid;
+        const userID = req.headers.userID || req.headers.userid;
 
         if (!BID && !userID) {
             res.status(400).send({ StatusCode: 400, Message: "Invalid BID or userID" })
@@ -393,15 +395,15 @@ export const billingDetails = async (req: Request, res: Response) => {
 
 export const orderUpdate = async (req: Request, res: Response) => {
     try {
-        const { isBookingConfirmed, BID, userID } = req.body;
+        const { isBookingConfirmed, BID, userID,createrID } = req.body;
 
         if (!isBookingConfirmed) {
             res.status(400).json({ StatusCode: 400, Message: "Missing required isBookingConfirmed" });
         } else {
             let OID = `O${generateCustomUuid("0123456789DONATUZ", 10)}`;
 
-             const billingData = await BillingCalDetails.findOne({ BID, userID }).sort({ createdAt: -1 }).lean();
-
+             const billingData = await BillingCalDetails.findOne({ BID, userID,createrID }).sort({ createdAt: -1 }).lean();
+console.log(billingData)
             if (!billingData) {
                 res.status(400).json({ StatusCode: 400, Message: "Invalid Billing Details" });
             } else {
@@ -415,11 +417,22 @@ export const orderUpdate = async (req: Request, res: Response) => {
                     const bookingUpdate = await BookingCallModel.updateOne(
                         {
                             "user.userID": userID,
-                            "userslotsData.date": date,
-                            [`userslotsData.timeslots.${day}.slot`]: timeslot
+                            "user.createrID": createrID,
+                            "userslotsData.date": date
                         },
-                        { $set: { "userslotsData.$[].timeslots.$[].isBooked": true } }
-                    );
+                        {
+                            $set: {
+                                [`userslotsData.$[outer].timeslots.${day}.$[inner].isBooked`]: true,
+                                [`userslotsData.$[outer].timeslots.${day}.$[inner].isPaymentPaid`]: true
+                            }
+                        },
+                        {
+                            arrayFilters: [
+                                { "outer.date": date },  // Match correct date inside userslotsData
+                                { "inner.slot": timeslot }  // Match correct slot inside timeslots[day]
+                            ]
+                        }
+                    );                    
 
                     if (bookingUpdate.matchedCount === 0) {
                         res.status(404).json({ StatusCode: 404, Message: "Time slot not found." });
