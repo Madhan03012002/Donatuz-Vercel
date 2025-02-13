@@ -341,7 +341,7 @@ export const calculation_billing = async (req: any, res: Response) => {
 
         // Construct billing data
         const billingData1 = {
-            // username: billingData.username,
+            username: billingData.username,
             userID: billingData.userID,
             createrID: billingData.createrID,
             date: billingData.date,
