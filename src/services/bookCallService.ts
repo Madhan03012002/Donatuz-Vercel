@@ -161,7 +161,9 @@ export const creater_details_update = async (req: Request, res: Response) => {
 
 
 export const view_creater_details = async (req: Request, res: Response) => {
-    let { createrID } = req.body;
+    let createrID = req.headers.createrid || req.headers.CreaterID; 
+ 
+    console.log(createrID)
     try {
         if (!createrID) {
             res.status(400).send({ StatusCode: 400, Message: "CreaterID Not Found" })
@@ -398,7 +400,7 @@ export const orderUpdate = async (req: Request, res: Response) => {
         } else {
             let OID = `O${generateCustomUuid("0123456789DONATUZ", 10)}`;
 
-            const billingData = await BillingCalDetails.findOne({ BID, userID }).sort({ createdAt: -1 }).lean();
+             const billingData = await BillingCalDetails.findOne({ BID, userID }).sort({ createdAt: -1 }).lean();
 
             if (!billingData) {
                 res.status(400).json({ StatusCode: 400, Message: "Invalid Billing Details" });
@@ -409,25 +411,20 @@ export const orderUpdate = async (req: Request, res: Response) => {
                 if (!userID || !date || !timeslot || !day) {
                     res.status(400).json({ StatusCode: 400, Message: "Missing required fields" });
                 } else {
-
+ 
                     const bookingUpdate = await BookingCallModel.updateOne(
                         {
                             "user.userID": userID,
                             "userslotsData.date": date,
                             [`userslotsData.timeslots.${day}.slot`]: timeslot
                         },
-                        {
-                            $set: {
-                                "userslotsData.$[].timeslots.$[].isBooked": true,
-                             }
-                        }
+                        { $set: { "userslotsData.$[].timeslots.$[].isBooked": true } }
                     );
 
                     if (bookingUpdate.matchedCount === 0) {
                         res.status(404).json({ StatusCode: 404, Message: "Time slot not found." });
                     } else {
-
-                        await Promise.all([
+                         await Promise.all([
                             CallBookingOrders.updateOne({ BID, userID }, { $set: { OID, isBooked: true } }),
                             BillingCalDetails.updateOne({ BID, userID }, { $set: { isBookingConfirmed: true } })
                         ]);
