@@ -168,7 +168,7 @@ export const view_creater_details = async (req: Request, res: Response) => {
         if (!createrID) {
             res.status(400).send({ StatusCode: 400, Message: "CreaterID Not Found" })
         } else {
-            const data = await BookingCallModel.findOne({ createrID }).sort({ _id: -1 });
+            const data = await BookingCallModel.findOne({ "user.createrID":createrID }).sort({ createdAt: -1 });
 
             if (data) {
                 res.status(200).json({ StatusCode: 200, Message: "Data Fetched Successfully", data });
