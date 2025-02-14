@@ -322,8 +322,7 @@ export const calculation_billing = async (req: any, res: Response) => {
     try {
         const billingData: any = req.billingData;
 
-        // Extract price per minute (e.g., "1 min/$5")
-        const priceMatch = billingData.pricePerDuration.match(/(\d+)\s*min\/\$(\d+)/);
+         const priceMatch = billingData.pricePerDuration.match(/(\d+)\s*min\/\$(\d+)/);
         if (!priceMatch) {
              res.status(400).json({ StatusCode: 400, Message: "Invalid price format" });
         }
@@ -331,20 +330,17 @@ export const calculation_billing = async (req: any, res: Response) => {
         const minutesPerUnit = parseInt(priceMatch[1]); // Extracted: 1 min
         const ratePerUnit = parseFloat(priceMatch[2]); // Extracted: $5
 
-        // Convert 1 min to seconds
-        const oneMinuteInSeconds = minutesPerUnit * 60;
+         const oneMinuteInSeconds = minutesPerUnit * 60;
 
-        // Extract start and end time from bookingSlot
-        const [start, end] = billingData.bookingSlot.split("-");
-        const startTime = new Date(`2025-01-01T${start}:00`);
-        const endTime = new Date(`2025-01-01T${end}:00`);
-        const durationInMinutes = (endTime.getTime() - startTime.getTime()) / (1000 * 60); // Convert ms to minutes
+        //  const [start, end] = billingData.bookingSlot.split("-");
+        // const startTime = new Date(`2025-01-01T${start}:00`);
+        // const endTime = new Date(`2025-01-01T${end}:00`);
+        // const durationInMinutes = (endTime.getTime() - startTime.getTime()) / (1000 * 60); // Convert ms to minutes
 
-        // Calculate Base Price
-        const basePrice = minutesPerUnit * ratePerUnit; // 1 * 5 = 5
+         const basePrice = minutesPerUnit * ratePerUnit; // 1 * 5 = 5
 console.log(basePrice)
-        // Additional charges
-        const platformCharges = 12.0;
+
+         const platformCharges = 12.0;
         const salesTax = 12.0;
 
         // Total cost
@@ -360,7 +356,7 @@ console.log(basePrice)
             createrID: billingData.createrID,
             date: billingData.date,
             BID: BID,
-            duration: `${durationInMinutes} minutes`,
+            // duration: `${durationInMinutes} minutes`,
             durationSeconds:oneMinuteInSeconds || "",
             timeslot: billingData.bookingSlot,
             basePrice: `$${basePrice.toFixed(2)}`,
