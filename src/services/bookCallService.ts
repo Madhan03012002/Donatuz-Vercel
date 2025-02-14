@@ -322,42 +322,37 @@ export const calculation_billing = async (req: any, res: Response) => {
     try {
         const billingData: any = req.billingData;
 
-         const priceMatch = billingData.pricePerDuration.match(/(\d+)\s*min\/\$(\d+)/);
+        const priceMatch = billingData.pricePerDuration.match(/(\d+)\s*min\/\$(\d+)/);
         if (!priceMatch) {
-             res.status(400).json({ StatusCode: 400, Message: "Invalid price format" });
+            res.status(400).json({ StatusCode: 400, Message: "Invalid price format" });
         }
 
         const minutesPerUnit = parseInt(priceMatch[1]); // Extracted: 1 min
         const ratePerUnit = parseFloat(priceMatch[2]); // Extracted: $5
 
-         const oneMinuteInSeconds = minutesPerUnit * 60;
+        const oneMinuteInSeconds = minutesPerUnit * 60;
 
         //  const [start, end] = billingData.bookingSlot.split("-");
         // const startTime = new Date(`2025-01-01T${start}:00`);
         // const endTime = new Date(`2025-01-01T${end}:00`);
         // const durationInMinutes = (endTime.getTime() - startTime.getTime()) / (1000 * 60); // Convert ms to minutes
 
-         const basePrice = minutesPerUnit * ratePerUnit; // 1 * 5 = 5
-console.log(basePrice)
+        const basePrice = minutesPerUnit * ratePerUnit; // 1 * 5 = 5
 
-         const platformCharges = 12.0;
+        const platformCharges = 12.0;
         const salesTax = 12.0;
 
-        // Total cost
         const totalCost = basePrice + platformCharges + salesTax;
 
-        // Generate BID
         let BID: any = `B${generateCustomUuid("0123456789DONATUZ", 10)}`;
 
-        // Construct billing data
         const billingData1 = {
             username: billingData.username,
             userID: billingData.userID,
             createrID: billingData.createrID,
             date: billingData.date,
             BID: BID,
-            // duration: `${durationInMinutes} minutes`,
-            durationSeconds:oneMinuteInSeconds || "",
+            durationSeconds: oneMinuteInSeconds || "",
             timeslot: billingData.bookingSlot,
             basePrice: `$${basePrice.toFixed(2)}`,
             platformCharges: `$${platformCharges.toFixed(2)}`,
@@ -367,11 +362,9 @@ console.log(basePrice)
             day: billingData.day,
             callJoined: false,
         };
-console.log(billingData1)
-        // Uncomment when ready to store data
         await BillingCalDetails.create(billingData1);
 
-        res.status(201).json({ StatusCode: 201, Message: "Billing Details Created",BID, billingData: billingData1 });
+        res.status(201).json({ StatusCode: 201, Message: "Billing Details Created", BID, billingData: billingData1 });
 
     } catch (error: any) {
         res.status(500).send({ StatusCode: 500, Message: `INTERNAL ERROR : ${error}` });
@@ -446,7 +439,7 @@ export const orderUpdate = async (req: Request, res: Response) => {
                         day: billingData.day || "",
                         occasion: occasion || "",
                         paymentMethod: paymentMethod || "",
-                        isBooked:true
+                        isBooked: true
                     }
                     console.log(ordersData)
                     await CallBookingOrders.create(ordersData)
