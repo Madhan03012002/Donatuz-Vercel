@@ -322,22 +322,36 @@ export const calculation_billing = async (req: any, res: Response) => {
     try {
         const billingData: any = req.billingData;
 
+        // Extract price per minute (e.g., "1 min/$5")
         const priceMatch = billingData.pricePerDuration.match(/(\d+)\s*min\/\$(\d+)/);
         if (!priceMatch) {
-            res.status(400).json({ StatusCode: 400, Message: "Invalid price format" });
+             res.status(400).json({ StatusCode: 400, Message: "Invalid price format" });
         }
 
-        const ratePerMinute = parseFloat(priceMatch[2]); // Extract the dollar value
+        const minutesPerUnit = parseInt(priceMatch[1]); // Extracted: 1 min
+        const ratePerUnit = parseFloat(priceMatch[2]); // Extracted: $5
 
-        // Extract booking duration in minutes
+        // Convert 1 min to seconds
+        const oneMinuteInSeconds = minutesPerUnit * 60;
+
+        // Extract start and end time from bookingSlot
         const [start, end] = billingData.bookingSlot.split("-");
         const startTime = new Date(`2025-01-01T${start}:00`);
         const endTime = new Date(`2025-01-01T${end}:00`);
-        const durationInMinutes = (endTime.getTime() - startTime.getTime()) / (1000 * 60); // Convert milliseconds to minutes
+        const durationInMinutes = (endTime.getTime() - startTime.getTime()) / (1000 * 60); // Convert ms to minutes
 
-        // Calculate total cost
-        const totalCost = ratePerMinute * durationInMinutes;
-        let BID: any = `B${generateCustomUuid("0123456789DONATUZ", 10)}`
+        // Calculate Base Price
+        const basePrice = minutesPerUnit * ratePerUnit; // 1 * 5 = 5
+console.log(basePrice)
+        // Additional charges
+        const platformCharges = 12.0;
+        const salesTax = 12.0;
+
+        // Total cost
+        const totalCost = basePrice + platformCharges + salesTax;
+
+        // Generate BID
+        let BID: any = `B${generateCustomUuid("0123456789DONATUZ", 10)}`;
 
         // Construct billing data
         const billingData1 = {
@@ -347,24 +361,26 @@ export const calculation_billing = async (req: any, res: Response) => {
             date: billingData.date,
             BID: BID,
             duration: `${durationInMinutes} minutes`,
+            durationSeconds:oneMinuteInSeconds || "",
             timeslot: billingData.bookingSlot,
-            basePrice: `$${totalCost.toFixed(2)}`,
-            platformCharges: "$12.00",
-            salesTax: "$12.00",
-            total: `$${(totalCost + 24).toFixed(2)}`,
+            basePrice: `$${basePrice.toFixed(2)}`,
+            platformCharges: `$${platformCharges.toFixed(2)}`,
+            salesTax: `$${salesTax.toFixed(2)}`,
+            total: `$${totalCost.toFixed(2)}`,
             status: 0,
             day: billingData.day,
             callJoined: false,
         };
-
+console.log(billingData1)
+        // Uncomment when ready to store data
         await BillingCalDetails.create(billingData1);
 
-        res.status(201).json({ StatusCode: 201, Message: "Billing Details Created", BID, userID: billingData.userID });
+        res.status(201).json({ StatusCode: 201, Message: "Billing Details Created", billingData: billingData1 });
 
     } catch (error: any) {
-        res.status(500).send({ StatusCode: 500, Message: `INTERNAL ERROR : ${error}` })
+        res.status(500).send({ StatusCode: 500, Message: `INTERNAL ERROR : ${error}` });
     }
-}
+};
 
 export const billingDetails = async (req: Request, res: Response) => {
     try {

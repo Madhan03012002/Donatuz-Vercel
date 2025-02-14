@@ -18,6 +18,7 @@ const BillingCalDetailsSchema = new Schema({
     pricePerDuration: { type: String },
     bookingSlot: { type: String },
     day: { type: String },
+    durationSeconds: {type:Number},
     isBookingConfirmed: { type: Boolean, default: false },
     createdAt: { type: Date, default: Date.now },
 });
