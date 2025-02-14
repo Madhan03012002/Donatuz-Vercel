@@ -375,7 +375,7 @@ console.log(billingData1)
         // Uncomment when ready to store data
         await BillingCalDetails.create(billingData1);
 
-        res.status(201).json({ StatusCode: 201, Message: "Billing Details Created", billingData: billingData1 });
+        res.status(201).json({ StatusCode: 201, Message: "Billing Details Created",BID, billingData: billingData1 });
 
     } catch (error: any) {
         res.status(500).send({ StatusCode: 500, Message: `INTERNAL ERROR : ${error}` });
