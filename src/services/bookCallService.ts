@@ -401,14 +401,14 @@ export const billingDetails = async (req: Request, res: Response) => {
 export const orderUpdate = async (req: Request, res: Response) => {
     try {
         const { isBookingConfirmed, BID, userID, createrID, occasion, paymentMethod } = req.body;
-        console.log(isBookingConfirmed, BID, userID, createrID)
+
         if (!isBookingConfirmed) {
             res.status(400).json({ StatusCode: 400, Message: "Missing required isBookingConfirmed" });
         } else {
             let OID = `O${generateCustomUuid("0123456789DONATUZ", 10)}`;
 
             const billingData = await BillingCalDetails.findOne({ BID, userID, createrID }).sort({ createdAt: -1 }).lean();
-            console.log(billingData)
+
             if (!billingData) {
                 res.status(400).json({ StatusCode: 400, Message: "Invalid Billing Details" });
             } else {
@@ -418,14 +418,32 @@ export const orderUpdate = async (req: Request, res: Response) => {
                 if (!userID || !date || !timeslot || !day) {
                     res.status(400).json({ StatusCode: 400, Message: "Missing required fields" });
                 } else {
-                    const result = await BookingCallModel.findOne({
-                        "user.userID": userID,
-                        "user.createrID": createrID,
-                        "userslotsData.date": date,
-                        [`userslotsData.timeslots.${day}.slot`]: timeslot
-                    });
-                    console.log(result);
 
+                    const updatePath = `userslotsData.$.timeslots.${day}.$[slotFilter].isBooked`;
+
+                    const result = await BookingCallModel.updateOne(
+                        {
+                            "user.userID": userID,
+                            "user.createrID": createrID,
+                            "userslotsData.date": date
+                        },
+                        {
+                            $set: {
+                                [updatePath]: true
+                            }
+                        },
+                        {
+                            arrayFilters: [
+                                { "slotFilter.slot": timeslot }
+                            ]
+                        }
+                    );
+
+                    if (result) {
+                        console.log(`✅ Successfully updated isBooked for ${timeslot} on ${date}.`);
+                    } else {
+                        console.log("❌ Update failed. Booking not found.");
+                    }
                     const ordersData = {
                         OID: OID,
                         username: billingData.username || "",
@@ -441,37 +459,8 @@ export const orderUpdate = async (req: Request, res: Response) => {
                         paymentMethod: paymentMethod || "",
                         isBooked: true
                     }
-                    console.log(ordersData)
+                    await BillingCalDetails.updateOne({ BID, userID }, { $set: { isBookingConfirmed: true } })
                     await CallBookingOrders.create(ordersData)
-
-                    // const bookingUpdate = await BookingCallModel.updateOne(
-                    //     {
-                    //         "user.userID": userID,
-                    //         "user.createrID": createrID,
-                    //         "userslotsData.date": date
-                    //     },
-                    //     {
-                    //         $set: {
-                    //             [`userslotsData.$[outer].timeslots.${day}.$[slotFilter].isBooked`]: true
-                    //         }
-                    //     },
-                    //     {
-                    //         arrayFilters: [
-                    //             { "outer.date": date },  // Match correct date inside userslotsData
-                    //             { "slotFilter.slot": timeslot }  // Match correct slot inside timeslots[day]
-                    //         ]
-                    //     }
-                    // );
-                    // console.log(bookingUpdate)
-
-
-                    // if (bookingUpdate.matchedCount === 0) {
-                    //     res.status(404).json({ StatusCode: 404, Message: "Time slot not found." });
-                    // } else {
-                    //      await Promise.all([
-                    //         CallBookingOrders.updateOne({ BID, userID }, { $set: { OID, isBooked: true } }),
-                    //         BillingCalDetails.updateOne({ BID, userID }, { $set: { isBookingConfirmed: true } })
-                    //     ]);
 
                     res.status(200).json({ StatusCode: 200, Message: "Slot successfully booked!", OID });
                     // }
